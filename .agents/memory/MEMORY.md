@@ -1,0 +1,1 @@
+- [Expo useColors dark-mode typecheck bug](expo-usecolors-dark-mode.md) — scaffold's useColors.ts cast fails tsc when you add a `dark` palette; fix the hook, don't skip dark mode.
