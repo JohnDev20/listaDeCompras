@@ -31,8 +31,8 @@ export default function HomeScreen() {
     return lists.filter((l) => l.name.toLowerCase().includes(q));
   }, [lists, query]);
 
-  const handleLongPress = (list: ShoppingList) => {
-    const options = ['Renomear', 'Duplicar', 'Excluir', 'Cancelar'];
+  const handleOpenMenu = (list: ShoppingList) => {
+    const options = ['Editar', 'Duplicar', 'Excluir', 'Cancelar'];
     const destructiveButtonIndex = 2;
     const cancelButtonIndex = 3;
 
@@ -93,13 +93,23 @@ export default function HomeScreen() {
         <Text style={[styles.title, { color: colors.foreground }]}>
           Minhas listas
         </Text>
-        <Pressable
-          onPress={() => router.push('/add-list')}
-          style={[styles.addButton, { backgroundColor: colors.primary }]}
-          testID="create-list-button"
-        >
-          <Feather name="plus" size={22} color={colors.primaryForeground} />
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable
+            onPress={() => router.push('/settings')}
+            hitSlop={8}
+            style={[styles.iconButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            testID="settings-button"
+          >
+            <Feather name="settings" size={19} color={colors.foreground} />
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/add-list')}
+            style={[styles.addButton, { backgroundColor: colors.primary }]}
+            testID="create-list-button"
+          >
+            <Feather name="plus" size={22} color={colors.primaryForeground} />
+          </Pressable>
+        </View>
       </View>
 
       {lists.length > 0 ? (
@@ -151,7 +161,7 @@ export default function HomeScreen() {
             <ListCard
               list={item}
               onPress={() => router.push(`/list/${item.id}`)}
-              onLongPress={() => handleLongPress(item)}
+              onOpenMenu={() => handleOpenMenu(item)}
             />
           )}
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
@@ -202,6 +212,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontFamily: 'Inter_700Bold',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  iconButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addButton: {
     width: 42,

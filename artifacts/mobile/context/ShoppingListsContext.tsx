@@ -12,26 +12,32 @@ import { generateId } from '@/utils/id';
 
 const STORAGE_KEY = 'lista-de-compras/lists/v1';
 
+export interface ItemInput {
+  name: string;
+  quantity: number;
+  unit: ItemUnit;
+  brand: string;
+  note: string;
+  categoryId?: string;
+  productId?: string;
+  price?: number;
+}
+
 interface ShoppingListsContextValue {
   lists: ShoppingList[];
   isLoading: boolean;
   getList: (listId: string) => ShoppingList | undefined;
-  createList: (name: string) => ShoppingList;
-  renameList: (listId: string, name: string) => void;
+  createList: (name: string, marketId?: string) => ShoppingList;
+  renameList: (listId: string, name: string, marketId?: string) => void;
   deleteList: (listId: string) => void;
   duplicateList: (listId: string) => ShoppingList | undefined;
-  addItem: (
-    listId: string,
-    input: { name: string; quantity: number; unit: ItemUnit; note: string },
-  ) => void;
-  updateItem: (
-    listId: string,
-    itemId: string,
-    input: { name: string; quantity: number; unit: ItemUnit; note: string },
-  ) => void;
+  addItem: (listId: string, input: ItemInput) => void;
+  updateItem: (listId: string, itemId: string, input: ItemInput) => void;
   toggleItem: (listId: string, itemId: string) => void;
   deleteItem: (listId: string, itemId: string) => void;
   clearCheckedItems: (listId: string) => void;
+  replaceAll: (lists: ShoppingList[]) => void;
+  mergeLists: (lists: ShoppingList[]) => void;
 }
 
 const ShoppingListsContext = createContext<ShoppingListsContextValue | null>(
@@ -82,7 +88,7 @@ export function ShoppingListsProvider({
   );
 
   const createList = useCallback(
-    (name: string) => {
+    (name: string, marketId?: string) => {
       const now = Date.now();
       const newList: ShoppingList = {
         id: generateId(),
@@ -90,6 +96,7 @@ export function ShoppingListsProvider({
         createdAt: now,
         updatedAt: now,
         items: [],
+        marketId,
       };
       persist([newList, ...lists]);
       return newList;
@@ -98,11 +105,16 @@ export function ShoppingListsProvider({
   );
 
   const renameList = useCallback(
-    (listId: string, name: string) => {
+    (listId: string, name: string, marketId?: string) => {
       persist(
         lists.map((l) =>
           l.id === listId
-            ? { ...l, name: name.trim() || l.name, updatedAt: Date.now() }
+            ? {
+                ...l,
+                name: name.trim() || l.name,
+                marketId,
+                updatedAt: Date.now(),
+              }
             : l,
         ),
       );
@@ -140,20 +152,21 @@ export function ShoppingListsProvider({
   );
 
   const addItem = useCallback(
-    (
-      listId: string,
-      input: { name: string; quantity: number; unit: ItemUnit; note: string },
-    ) => {
+    (listId: string, input: ItemInput) => {
       const now = Date.now();
       const newItem: ShoppingItem = {
         id: generateId(),
         name: input.name.trim(),
         quantity: input.quantity,
         unit: input.unit,
+        brand: input.brand.trim(),
         note: input.note.trim(),
         checked: false,
         createdAt: now,
         updatedAt: now,
+        categoryId: input.categoryId,
+        productId: input.productId,
+        price: input.price,
       };
       persist(
         lists.map((l) =>
@@ -167,11 +180,7 @@ export function ShoppingListsProvider({
   );
 
   const updateItem = useCallback(
-    (
-      listId: string,
-      itemId: string,
-      input: { name: string; quantity: number; unit: ItemUnit; note: string },
-    ) => {
+    (listId: string, itemId: string, input: ItemInput) => {
       const now = Date.now();
       persist(
         lists.map((l) =>
@@ -186,7 +195,11 @@ export function ShoppingListsProvider({
                         name: input.name.trim(),
                         quantity: input.quantity,
                         unit: input.unit,
+                        brand: input.brand.trim(),
                         note: input.note.trim(),
+                        categoryId: input.categoryId,
+                        productId: input.productId,
+                        price: input.price,
                         updatedAt: now,
                       }
                     : item,
@@ -255,6 +268,27 @@ export function ShoppingListsProvider({
     [lists, persist],
   );
 
+  const replaceAll = useCallback(
+    (next: ShoppingList[]) => {
+      persist(next);
+    },
+    [persist],
+  );
+
+  const mergeLists = useCallback(
+    (incoming: ShoppingList[]) => {
+      const existingIds = new Set(lists.map((l) => l.id));
+      const now = Date.now();
+      const toAdd = incoming.map((l) =>
+        existingIds.has(l.id)
+          ? { ...l, id: generateId(), createdAt: now, updatedAt: now }
+          : l,
+      );
+      persist([...toAdd, ...lists]);
+    },
+    [lists, persist],
+  );
+
   const value = useMemo<ShoppingListsContextValue>(
     () => ({
       lists,
@@ -269,6 +303,8 @@ export function ShoppingListsProvider({
       toggleItem,
       deleteItem,
       clearCheckedItems,
+      replaceAll,
+      mergeLists,
     }),
     [
       lists,
@@ -283,6 +319,8 @@ export function ShoppingListsProvider({
       toggleItem,
       deleteItem,
       clearCheckedItems,
+      replaceAll,
+      mergeLists,
     ],
   );
 

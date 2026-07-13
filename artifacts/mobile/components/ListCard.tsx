@@ -1,22 +1,29 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Platform } from 'react-native';
 import { useColors } from '@/hooks/useColors';
+import { useCatalog } from '@/context/CatalogContext';
 import type { ShoppingList } from '@/types/shopping';
 
 interface ListCardProps {
   list: ShoppingList;
   onPress: () => void;
-  onLongPress: () => void;
+  onOpenMenu: () => void;
 }
 
-export function ListCard({ list, onPress, onLongPress }: ListCardProps) {
+export function ListCard({ list, onPress, onOpenMenu }: ListCardProps) {
   const colors = useColors();
+  const { getMarket } = useCatalog();
   const total = list.items.length;
   const done = list.items.filter((i) => i.checked).length;
   const progress = total > 0 ? done / total : 0;
+  const market = getMarket(list.marketId);
+
+  const metaParts = [
+    total === 0 ? 'Lista vazia' : `${done} de ${total} ${total === 1 ? 'item' : 'itens'}`,
+  ];
+  if (market) metaParts.push(market.name);
 
   return (
     <Pressable
@@ -26,7 +33,7 @@ export function ListCard({ list, onPress, onLongPress }: ListCardProps) {
         }
         onPress();
       }}
-      onLongPress={onLongPress}
+      onLongPress={onOpenMenu}
       style={({ pressed }) => [
         styles.card,
         {
@@ -50,10 +57,11 @@ export function ListCard({ list, onPress, onLongPress }: ListCardProps) {
         >
           {list.name}
         </Text>
-        <Text style={[styles.meta, { color: colors.mutedForeground }]}>
-          {total === 0
-            ? 'Lista vazia'
-            : `${done} de ${total} ${total === 1 ? 'item' : 'itens'}`}
+        <Text
+          style={[styles.meta, { color: colors.mutedForeground }]}
+          numberOfLines={1}
+        >
+          {metaParts.join(' · ')}
         </Text>
       </View>
 
@@ -74,7 +82,18 @@ export function ListCard({ list, onPress, onLongPress }: ListCardProps) {
         </View>
       ) : null}
 
-      <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+      <Pressable
+        onPress={onOpenMenu}
+        hitSlop={10}
+        style={styles.menuButton}
+        testID={`list-menu-${list.id}`}
+      >
+        <Feather
+          name="more-vertical"
+          size={18}
+          color={colors.mutedForeground}
+        />
+      </Pressable>
     </Pressable>
   );
 }
@@ -108,7 +127,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
   },
   progressWrap: {
-    width: 46,
+    width: 40,
   },
   progressTrack: {
     height: 5,
@@ -118,5 +137,8 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     borderRadius: 3,
+  },
+  menuButton: {
+    padding: 4,
   },
 });

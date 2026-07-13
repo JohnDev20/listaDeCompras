@@ -15,6 +15,7 @@ import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useShoppingLists } from '@/context/ShoppingListsContext';
+import { useCatalog } from '@/context/CatalogContext';
 import { ItemRow } from '@/components/ItemRow';
 import { EmptyState } from '@/components/EmptyState';
 import { buildShareText } from '@/utils/share';
@@ -26,22 +27,34 @@ export default function ListDetailScreen() {
   const navigation = useNavigation();
   const { getList, toggleItem, deleteItem, clearCheckedItems } =
     useShoppingLists();
+  const { getMarket } = useCatalog();
   const [query, setQuery] = useState('');
 
   const list = getList(id);
+  const market = getMarket(list?.marketId);
 
   useLayoutEffect(() => {
     navigation.setOptions({
       title: list ? list.name : 'Lista',
       headerRight: () =>
         list ? (
-          <Pressable onPress={() => handleShare()} hitSlop={10}>
-            <Feather name="share-2" size={20} color={colors.primary} />
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: '/add-list', params: { listId: list.id } })
+              }
+              hitSlop={10}
+            >
+              <Feather name="edit-2" size={18} color={colors.primary} />
+            </Pressable>
+            <Pressable onPress={() => handleShare()} hitSlop={10}>
+              <Feather name="share-2" size={20} color={colors.primary} />
+            </Pressable>
+          </View>
         ) : null,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigation, list?.name, list?.items]);
+  }, [navigation, list?.name, list?.items, list?.marketId]);
 
   const handleShare = async () => {
     if (!list) return;
@@ -87,6 +100,17 @@ export default function ListDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {market ? (
+        <View style={styles.marketBadgeRow}>
+          <View style={[styles.marketBadge, { backgroundColor: colors.secondary }]}>
+            <Feather name="map-pin" size={12} color={colors.primary} />
+            <Text style={[styles.marketBadgeText, { color: colors.foreground }]}>
+              {market.name}
+            </Text>
+          </View>
+        </View>
+      ) : null}
+
       {totalCount > 0 ? (
         <View
           style={[
@@ -204,6 +228,28 @@ export default function ListDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  marketBadgeRow: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  marketBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  marketBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
   },
   searchBar: {
     flexDirection: 'row',
