@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { CatalogProvider } from '@/context/CatalogContext';
 import { ShoppingListsProvider } from '@/context/ShoppingListsContext';
 import { useColors } from '@/hooks/useColors';
 import {
@@ -37,11 +38,16 @@ function RootLayoutNav() {
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="list/[id]" options={{ title: '' }} />
+      <Stack.Screen name="settings" options={{ title: 'Configurações' }} />
+      <Stack.Screen
+        name="price-history/[productId]"
+        options={{ title: 'Histórico de preço' }}
+      />
       <Stack.Screen
         name="add-list"
         options={{
           presentation: 'formSheet',
-          sheetAllowedDetents: [0.4],
+          sheetAllowedDetents: [0.55],
           sheetGrabberVisible: false,
           headerShown: false,
         }}
@@ -50,7 +56,7 @@ function RootLayoutNav() {
         name="add-item"
         options={{
           presentation: 'formSheet',
-          sheetAllowedDetents: [0.85],
+          sheetAllowedDetents: [0.92],
           sheetGrabberVisible: false,
           headerShown: false,
         }}
@@ -81,9 +87,11 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView>
             <KeyboardProvider>
-              <ShoppingListsProvider>
-                <RootLayoutNav />
-              </ShoppingListsProvider>
+              <CatalogProvider>
+                <ShoppingListsProvider>
+                  <RootLayoutNav />
+                </ShoppingListsProvider>
+              </CatalogProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>

@@ -1,7 +1,16 @@
 import React, { useRef } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActionSheetIOS,
+  Alert,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useColors } from '@/hooks/useColors';
 import type { ShoppingItem } from '@/types/shopping';
@@ -22,6 +31,47 @@ export function ItemRow({ item, onToggle, onEdit, onDelete }: ItemRowProps) {
     item.quantity && item.quantity > 0
       ? `${formatQuantity(item.quantity)} ${UNIT_LABELS[item.unit]}`
       : null;
+  const subtitleParts = [quantityLabel, item.brand, item.note].filter(Boolean);
+
+  const handleOpenMenu = () => {
+    const hasHistory = Boolean(item.productId);
+    const options = ['Editar'];
+    if (hasHistory) options.push('Histórico de preço');
+    options.push('Excluir', 'Cancelar');
+    const destructiveButtonIndex = options.length - 2;
+    const cancelButtonIndex = options.length - 1;
+
+    const handle = (index: number | undefined) => {
+      if (index === 0) {
+        onEdit();
+      } else if (hasHistory && index === 1) {
+        router.push(`/price-history/${item.productId}`);
+      } else if (index === destructiveButtonIndex) {
+        onDelete();
+      }
+    };
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options, destructiveButtonIndex, cancelButtonIndex },
+        handle,
+      );
+    } else {
+      const buttons = [
+        { text: 'Editar', onPress: () => handle(0) },
+        ...(hasHistory
+          ? [{ text: 'Histórico de preço', onPress: () => handle(1) }]
+          : []),
+        {
+          text: 'Excluir',
+          style: 'destructive' as const,
+          onPress: () => handle(destructiveButtonIndex),
+        },
+        { text: 'Cancelar', style: 'cancel' as const },
+      ];
+      Alert.alert(item.name, undefined, buttons);
+    }
+  };
 
   const renderRightActions = () => (
     <View style={styles.deleteAction}>
@@ -82,17 +132,24 @@ export function ItemRow({ item, onToggle, onEdit, onDelete }: ItemRowProps) {
           >
             {item.name}
           </Text>
-          {(quantityLabel || item.note) ? (
+          {subtitleParts.length > 0 ? (
             <Text
               style={[styles.subtitle, { color: colors.mutedForeground }]}
               numberOfLines={1}
             >
-              {[quantityLabel, item.note].filter(Boolean).join(' · ')}
+              {subtitleParts.join(' · ')}
             </Text>
           ) : null}
         </Pressable>
 
-        <Feather name="more-vertical" size={16} color={colors.mutedForeground} />
+        <Pressable
+          onPress={handleOpenMenu}
+          hitSlop={10}
+          style={styles.menuButton}
+          testID={`item-menu-${item.id}`}
+        >
+          <Feather name="more-vertical" size={16} color={colors.mutedForeground} />
+        </Pressable>
       </View>
     </Swipeable>
   );
@@ -129,6 +186,9 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 12.5,
     fontFamily: 'Inter_400Regular',
+  },
+  menuButton: {
+    padding: 4,
   },
   deleteAction: {
     width: 64,
